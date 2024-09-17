@@ -1,6 +1,7 @@
 from enum import Enum
 from typing_extensions  import Annotated
 from typing import List
+import threading
 from starlette.exceptions import HTTPException
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -25,7 +26,8 @@ from core.middlewares import (
 )
 # from core.helpers.cache import Cache, RedisBackend, CustomKeyMaker
 from core.exceptions.handler import http_exception_handler, request_validation_exception_handler, unhandled_exception_handler
-from core.middlewares.response_log import log_request_middleware
+from core.middlewares.response_log import log_request_middleware#
+from core.middlewares.stream_client import client
 
 
 def init_db(app_: FastAPI) -> None:
@@ -111,6 +113,7 @@ def create_app() -> FastAPI:
         dependencies=[Depends(Logging)],
         # openapi_tags=tags_metadata
     )
+    
     init_db(app_=app_)
     init_routers(app_=app_)
     init_listeners(app_=app_)
@@ -122,3 +125,9 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+@app.on_event("startup")
+def start_receiving():
+    # Start the consumer in a separate thread
+    thread = threading.Thread(target=client.start_consuming)
+    thread.start()
