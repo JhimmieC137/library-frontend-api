@@ -7,6 +7,7 @@ from core.dependencies.sessions import get_db
 # from core.dependencies.auth import get_current_user
 from core.exceptions import *
 from core.helpers.schemas import CustomListResponse, CustomResponse
+from core.middlewares.stream_client import client
 
 from .models import *
 from .schemas import *
@@ -106,7 +107,7 @@ async def fetch_books(
                                                         publishers=publishers,
                                                         user_id=current_holder_id
                                                     )
-        
+        client.send_message("Yooooooooo! furaguchiee")
         return {'message': 'Book list fetched successfully', 'total_count': book_count, 'count': len(books), 'next_page': page + 1,'data': books}
     
     except Exception as error:
