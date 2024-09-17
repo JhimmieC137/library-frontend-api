@@ -107,7 +107,7 @@ async def fetch_books(
     limit: int = 10, page: int = 1, search: str = '',
     publishers: str = None,
     status: BookStatus = BookStatus.AVAILABLE,
-    category: BookCategory = BookCategory,
+    category: BookCategory = None,
 ) -> CustomListResponse[BaseBook]:
     """
     Fetch list of books
