@@ -28,6 +28,7 @@ from core.exceptions.handler import http_exception_handler, request_validation_e
 from core.middlewares.response_log import log_request_middleware
 
 
+
 def init_db(app_: FastAPI) -> None:
     Base.metadata.create_all(bind=engine, checkfirst=True)
 

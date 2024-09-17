@@ -11,6 +11,10 @@ class Config(BaseSettings):
     DEBUG: bool = True
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8005
+    RABBIT_MQ_USER: str | None = os.environ.get("RABBITMQ_USER")
+    RABBITMQ_DEFAULT_PASS: str | None = os.environ.get("RABBITMQ_DEFAULT_PASS")
+    RABBITMQ_HOSTNAME: str | None = os.environ.get("RABBITMQ_HOSTNAME")
+    RABBITMQ_PORT: int | None = os.environ.get("RABBITMQ_PORT")
     SECRET_KEY: str | None = os.environ.get("SECRET_KEY")
     POSTGRES_USER : str | None = os.environ.get("POSTGRES_USER")
     POSTGRES_PASSWORD:str | None = os.environ.get("POSTGRES_PASSWORD")

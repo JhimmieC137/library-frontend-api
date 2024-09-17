@@ -26,8 +26,7 @@ class UserRepository:
         
         if user:
             raise DuplicateEmailException("Email taken")
-        
-        # Hash the password
+
         payload.email = payload.email.lower()
         new_user = User(**payload.dict())
 

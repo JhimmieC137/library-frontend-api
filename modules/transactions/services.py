@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import Depends, status, APIRouter, Path
 from sqlalchemy.orm import Session
 
+from core.env import config
 from core.dependencies.sessions import get_db
 # from core.dependencies.auth import get_current_user
 from core.exceptions import *
@@ -13,6 +14,20 @@ from core.helpers.schemas import CustomListResponse, CustomResponse
 from .models import *
 from .schemas import *
 from .repository import TransactionRepository, BookRepository
+import pika
+import json
+
+
+# Connect to RabbitMQ
+credentials = pika.PlainCredentials(config.RABBIT_MQ_USER, config.RABBITMQ_DEFAULT_PASS)
+parameters = pika.ConnectionParameters(config.RABBITMQ_HOSTNAME,
+                                       config.RABBITMQ_PORT,
+                                       'ashvdjpb',
+                                       credentials)
+connection = pika.BlockingConnection(parameters=parameters) # add container name in docker
+channel = connection.channel()
+channel.queue_declare(queue='book_service')
+
 
 router = APIRouter(
     prefix=""
@@ -128,3 +143,22 @@ async def retrieve_book(
     
     except Exception as error:
         raise error
+
+
+
+def on_request(ch, method, props, body):
+    print(body)
+    print(body['message'])
+    print(json.loads(body))
+    print(body['message'])
+    response = "I see you and i hear you"
+
+    ch.basic_publish(exchange='',
+                     routing_key=props.reply_to,
+                     properties=pika.BasicProperties(correlation_id = \
+                                                         props.correlation_id),
+                     body=str(response))
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
+channel.basic_qos(prefetch_count=1)
+channel.basic_consume(queue='book_service', on_message_callback=on_request)
