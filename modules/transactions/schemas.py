@@ -18,7 +18,7 @@ class BaseTransaction(BaseModel):
     user_email: EmailStr = Field(None, description="email")
     status : Optional[TransactionStatus] = None
     created_at: Optional[datetime] = None
-    days_till_return: Optional[int] = None
+    return_date: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True, validate_assignment=True)
 
 class CreateTransaction(BaseModel):

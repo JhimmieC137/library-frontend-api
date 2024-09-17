@@ -26,7 +26,7 @@ parameters = pika.ConnectionParameters(config.RABBITMQ_HOSTNAME,
                                        credentials)
 connection = pika.BlockingConnection(parameters=parameters) # add container name in docker
 channel = connection.channel()
-channel.queue_declare(queue='book_service')
+channel.queue_declare(queue='rpc_queue')
 
 
 router = APIRouter(
@@ -61,9 +61,9 @@ async def create_transaction(
 
 @router.get('/transactions', response_model=CustomListResponse[BaseTransaction], tags=["Transactions"])
 async def fetch_transactions(
-    user_id: Annotated[UUID, Path(title="The ID of the User")], 
+    user_id: Annotated[UUID, Path(title="The ID of the User")] = None, 
     limit: int = 10, page: int = 1, 
-    status: TransactionStatus = TransactionStatus.BORROWING
+    status: TransactionStatus = None
 ) -> CustomListResponse[BaseTransaction]:
     """
     Fetch current user's transactions
@@ -103,7 +103,7 @@ async def retrieve_transaction(
 
 @router.get('/books', response_model=CustomListResponse[BaseBook], tags=["Books"])
 async def fetch_books(
-    current_holder_id: Annotated[UUID, Path(title="The ID of the User")], 
+    current_holder_id: Annotated[UUID, Path(title="The ID of the User")] = None, 
     limit: int = 10, page: int = 1, search: str = '',
     publishers: str = None,
     status: BookStatus = BookStatus.AVAILABLE,
@@ -137,7 +137,7 @@ async def retrieve_book(
     Retrieve book
     """
     try:
-        book = bookRepo.get_book_by_id(book_id=book_id)
+        book = await bookRepo.get_book_by_id(book_id=book_id)
         
         return {"message": "Book retrieved successfully", "data": book}
     
@@ -145,13 +145,19 @@ async def retrieve_book(
         raise error
 
 
+def fib(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return fib(n - 1) + fib(n - 2)
 
 def on_request(ch, method, props, body):
-    print(body)
-    print(body['message'])
-    print(json.loads(body))
-    print(body['message'])
-    response = "I see you and i hear you"
+    n = int(body)
+
+    print(f" [.] fib({n}) nice")
+    response = fib(n)
 
     ch.basic_publish(exchange='',
                      routing_key=props.reply_to,
@@ -161,4 +167,7 @@ def on_request(ch, method, props, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_qos(prefetch_count=1)
-channel.basic_consume(queue='book_service', on_message_callback=on_request)
+channel.basic_consume(queue='rpc_queue', on_message_callback=on_request)
+
+print(" [x] Awaiting RPC requests")
+channel.start_consuming()
