@@ -169,5 +169,5 @@ def on_request(ch, method, props, body):
 channel.basic_qos(prefetch_count=1)
 channel.basic_consume(queue='rpc_queue', on_message_callback=on_request)
 
-print(" [x] Awaiting RPC requests")
+print(" [x] Awaiting RPC requestsss")
 channel.start_consuming()

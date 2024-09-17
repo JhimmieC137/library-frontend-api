@@ -1,4 +1,4 @@
-from .env import config
+from ..env import config
 import pika
 # Connect to RabbitMQ
 credentials = pika.PlainCredentials(config.RABBIT_MQ_USER, config.RABBITMQ_DEFAULT_PASS)
