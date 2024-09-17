@@ -82,6 +82,9 @@ class TransactionRepository:
         return Transaction
         
 class BookRepository:
+    def __init__(self) -> None:
+        self.db: Session = get_db().__next__()
+        
     async def get_book_list(self, page: int, limit: int, search: str, publishers: str = None, category: BookCategory = None, status: BookStatus = None, user_id: UUID = None) -> tuple[List[Book], int]:
         skip = (page - 1) * limit
         book_query = self.db.query(Book)\
