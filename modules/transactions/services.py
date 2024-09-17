@@ -88,10 +88,11 @@ async def retrieve_transaction(
 
 @router.get('/books', response_model=CustomListResponse[BaseBook], tags=["Books"])
 async def fetch_books(
+    current_holder_id: Annotated[UUID, Path(title="The ID of the User")], 
     limit: int = 10, page: int = 1, search: str = '',
     publishers: str = None,
     status: BookStatus = BookStatus.AVAILABLE,
-    category: BookCategory = BookCategory
+    category: BookCategory = BookCategory,
 ) -> CustomListResponse[BaseBook]:
     """
     Fetch list of books
@@ -103,7 +104,8 @@ async def fetch_books(
                                                         search=search, 
                                                         status=status, 
                                                         category=category, 
-                                                        publishers=publishers
+                                                        publishers=publishers,
+                                                        user_id=current_holder_id
                                                     )
         
         return {'message': 'Book list fetched successfully', 'total_count': book_count, 'count': len(books), 'next_page': page + 1,'data': books}

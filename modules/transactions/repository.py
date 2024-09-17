@@ -11,7 +11,7 @@ from core.dependencies.sessions import get_db
 from core.helpers import password
 from core.helpers.mail_utils import *
 from core.exceptions.auth import DuplicateEmailException
-from core.exceptions.base import ForbiddenException, InternalServerErrorException
+from core.exceptions.base import UnprocessableEntity, BadRequestException, InternalServerErrorException
 from core.exceptions import NotFoundException
 
 from modules.users.models import User
@@ -26,6 +26,21 @@ class TransactionRepository:
         user = self.db.query(User).filter(User.id == payload.user_id).first()
         if user is None:
             raise NotFoundException("User not found!")
+            
+        book: Book = self.db.query(Book).filter(Book.id == payload.book_id).first()
+        if book is None:
+            raise NotFoundException("Book not found!")
+        elif book and book.is_deleted:
+            raise BadRequestException("Book no longer available at this library!")
+        elif book and book.status == BookStatus.BORROWED:
+            raise UnprocessableEntity("Book has been lent to another user")
+            
+        try:
+            book.status = BookStatus.BORROWED if payload.status == TransactionStatus.BORROWING else BookStatus.AVAILABLE
+            self.db.commit()
+            
+        except:
+            raise InternalServerErrorException("Something went wrong updating book's status")
                
         try:
             new_transaction = Transaction(**payload.dict())
@@ -37,20 +52,6 @@ class TransactionRepository:
         
         except:
             raise InternalServerErrorException("Something went wrong creating the transaction")
-            
-        
-        
-        book: Book = self.db.query(Book).filter(Book.id == payload.book_id).first()
-    
-        if book is None:
-            raise NotFoundException("Book not found!")
-        
-        try:
-            book.status = BookStatus.BORROWED if payload.status == TransactionStatus.BORROWING else BookStatus.AVAILABLE
-            self.db.commit()
-            
-        except:
-            raise InternalServerErrorException("Something went wrong updating book's status")
         
         return new_transaction
 
@@ -80,37 +81,8 @@ class TransactionRepository:
         
         return Transaction
         
-    # async def update_tansaction(self, payload: UpdateTransaction, transaction_id: UUID):
-    #     # Check for transaction
-    #     transaction_query = self.db.query(Transaction).filter(Transaction.id == transaction_id)
-    #     transaction: Transaction = transaction_query.first() 
-    #     if transaction is None:
-    #         raise NotFoundException("Transaction not found!")
-        
-    #     # Check for user
-    #     user = self.db.query(User).filter(User.id == payload.user_id).first()
-    #     if user is None:
-    #         raise NotFoundException("User not found!")
-        
-    #     # Check for book
-    #     book: Book = self.db.query(Book).filter(Book.id == payload.book_id).first()
-    #     if book is None:
-    #         raise NotFoundException("Book not found!")
-             
-    #     # Transaction update
-    #     try:
-    #         transaction_query.update(payload.dict(exclude_unset = True))
-    #         if payload.days_till_return:
-    #             transaction.return_date += timedelta(payload.days_till_return)
-    #         
-    #         self.db.commit()
-            
-    #     except:
-    #         raise InternalServerErrorException("Something went wrong updating transaction")
-        
-        
 class BookRepository:
-    async def get_book_list(self, page: int, limit: int, search: str, publishers: str = None, category: BookCategory = None, status: BookStatus = None) -> tuple[List[Book], int]:
+    async def get_book_list(self, page: int, limit: int, search: str, publishers: str = None, category: BookCategory = None, status: BookStatus = None, user_id: UUID = None) -> tuple[List[Book], int]:
         skip = (page - 1) * limit
         book_query = self.db.query(Book)\
                     .filter(or_(
@@ -132,6 +104,11 @@ class BookRepository:
             book_query = book_query.filter(
                 Book.status == status
             )
+            
+        if user_id:
+            book_query = book_query.filter(
+                Book.holder_id == user_id
+            )
                     
         
         book_count: int = book_query.count()
@@ -145,5 +122,8 @@ class BookRepository:
     
         if book is None:
             raise NotFoundException("Book not found!")
+        elif book and book.is_deleted:
+            raise BadRequestException("Book no longer available at this library!")
+            
         
         return book

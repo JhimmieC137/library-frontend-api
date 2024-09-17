@@ -96,8 +96,7 @@ class UserRepository:
             elif user_profile is not None and payload.user_profile != None:
                 user_profile_query.update(payload.user_profile.dict(exclude_unset=True))
         
-        except Exception as e:
-            print(e)
+        except:
             raise InternalServerErrorException("Something went wrong updating user's profile")
         
         # User Update

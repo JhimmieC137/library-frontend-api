@@ -40,11 +40,20 @@ class Book(Base):
     category = Column(Enum(BookCategory), server_default = BookCategory.ACTION, nullable=False)
     status = Column(Enum(BookStatus), server_default = BookStatus.BORROWED, nullable=False)
         
-    # Audit logs
+    # Current holder info
+    holder_id = Column(UUID(as_uuid=True), nullable=True)
+    holder_email = Column(String, nullable=True, server_default = "example@mail.com")
+
+    is_deleted = Column(Boolean, nullable=False, server_default='False')
+    
+    # Timestamps
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"), onupdate=text("now()"))
+    
+    deleted_at = Column(TIMESTAMP(timezone=True),
+                        nullable=True)
     
     def __repr__(self):
         return f"<User {self.id}>"
@@ -67,7 +76,7 @@ class Transaction(Base):
     
     return_date = Column(TIMESTAMP(timezone=True), nullable=True)
     
-    # Audit logs
+    # Timestamps
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True),
