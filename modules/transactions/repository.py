@@ -202,7 +202,7 @@ class BookRepository:
             raise InternalServerErrorException("Something went wrong removing book from library")
     
     
-    def update_book(self, book_id: UUID, payload: UpdateBook) -> Book:
+    def update_book(self, book_id: UUID, payload: Union[UpdateBook, BaseBook]) -> Book:
         book_query = self.db.query(Book).filter(Book.id == book_id)
         
         book: Book = book_query.first()
