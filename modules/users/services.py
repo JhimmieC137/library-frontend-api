@@ -35,7 +35,7 @@ async def create_user(
         client.send_message(json.dumps({
             "service": "users",
             "action": "create_user",
-            "payload": payload,
+            "payload": payload.dict(),
         }))
         return {"message": "User created successfully", "data": new_user, "code": 201}
     
@@ -73,7 +73,7 @@ async def update_user(
             "service": "users",
             "action": "update_user",
             "user_id": user_id,
-            "payload": payload,
+            "payload": payload.dict(),
         }))
         return {"message":"User profile updated successfully","data": user}
     

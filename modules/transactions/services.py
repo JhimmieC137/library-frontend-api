@@ -38,7 +38,7 @@ async def create_transaction(
         client.send_message(json.dumps({
             "service": "transactions",
             "action": "create_transaction",
-            "payload": payload,
+            "payload": payload.dict(),
         }))
         return {"message": "Transaction created successfully", "data": new_transaction, "code": 201}
     
