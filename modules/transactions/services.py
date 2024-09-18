@@ -51,6 +51,7 @@ async def create_transaction(
 @router.get('/transactions', response_model=CustomListResponse[BaseTransaction], tags=["Transactions"])
 async def fetch_transactions(
     user_id: Annotated[UUID, Path(title="The ID of the User")] = None, 
+    book_id: Annotated[UUID, Path(title="The ID of the Book")] = None, 
     limit: int = 10, page: int = 1, 
     status: TransactionStatus = None
 ) -> CustomListResponse[BaseTransaction]:
@@ -58,7 +59,7 @@ async def fetch_transactions(
     Fetch current user's transactions
     """
     try:
-        transactions, transaction_count = transactionRepo.get_transaction_list(page=page, limit=limit, user_id=user_id, status=status)
+        transactions, transaction_count = transactionRepo.get_transaction_list(page=page, limit=limit, user_id=user_id, book_id=book_id, status=status)
         
         return {'message': 'Transaction list fetched successfully', 'total_count': transaction_count, 'count': len(transactions), 'next_page': page + 1,'data': transactions}
     

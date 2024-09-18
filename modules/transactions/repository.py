@@ -43,13 +43,18 @@ class TransactionRepository:
             payload_dict = payload.dict()
             days_till_return = payload_dict.pop('days_till_return')
             
-            new_transaction = Transaction(id=uuid4() if type(payload) == CreateTransaction else payload_dict['id'], **payload_dict)
+            if type(payload) == CreateTransaction:
+                new_transaction = Transaction(id=uuid4(), **payload_dict)
+                new_transaction.return_date = datetime.now() + timedelta(days_till_return) if payload_dict['status'] == TransactionStatus.BORROWING else None
+            else:
+                new_transaction = Transaction(**payload_dict)
+                
         
             if payload_dict['status'] == TransactionStatus.BORROWING:
-                new_transaction.return_date = datetime.now() + timedelta(days_till_return)
                 book.status = BookStatus.BORROWED 
                 book.holder_id = user.id
                 book.holder_email = user.email
+                book.updated_at = datetime.now() if type(payload) == CreateTransaction else payload_dict['created_at']
             
             else:
                 book.status = BookStatus.AVAILABLE 
@@ -72,7 +77,7 @@ class TransactionRepository:
         
 
 
-    def get_transaction_list(self, page: int, limit: int, user_id: UUID = None, status: TransactionStatus = None) -> tuple[List[Transaction], int]:
+    def get_transaction_list(self, page: int, limit: int, user_id: UUID = None, book_id: UUID = None, status: TransactionStatus = None) -> tuple[List[Transaction], int]:
         skip = (page - 1) * limit
         transaction_query = self.db.query(Transaction)
         
@@ -84,6 +89,11 @@ class TransactionRepository:
         if user_id:
             transaction_query = transaction_query.filter(
                 Transaction.user_id == user_id
+            )
+            
+        if book_id:
+            transaction_query = transaction_query.filter(
+                Transaction.book_id == book_id
             )
                 
         
@@ -156,14 +166,17 @@ class BookRepository:
         return book
     
     
-    def create_book(self, payload: CreateBook) -> Book:
+    def create_book(self, payload: Union[CreateBook, BaseBook]) -> Book:
         book: Book = self.db.query(Book).filter(Book.name == payload.name).first()
         
         if book:
             raise DuplicateValueException("Book already exists!")
         
-        new_book = Book(id=uuid4(), **payload.dict())
-        
+        if type(payload) == CreateBook: 
+            new_book = Book(id=uuid4(), **payload.dict())
+        else:
+            new_book = Book(**payload.dict())
+            
         self.db.add(new_book)
         self.db.commit()
         self.db.refresh(new_book)

@@ -28,30 +28,34 @@ class UserRepository:
         try:
             if type(payload) == CreateUserSchema:
                 new_user = User(id=uuid.uuid4(), **payload.dict())
-
-                self.db.add(new_user)
-                self.db.commit()
-                self.db.refresh(new_user)
                 
-                # Create user profile
                 new_user_profile = UserProfile(id=uuid.uuid4(), user_id=new_user.id)
                 new_user_profile.updated_at = datetime.now()
-                self.db.add(new_user_profile)
                 
             else:
-                new_user = User(id=UUID(payload.id), **payload.dict())
-                new_user_profile = UserProfile(id=UUID(payload.user_profile.id), **payload.user_profile.dict())
+                user = payload.dict()
+                profile = user.pop('user_profile')
                 
-            self.db.commit()
-            # new_user.id = str(new_user.id)
-            # new_user.user_profile.id = str(new_user.user_profile.id)
-            # new_user.user_profile.user_id = str(new_user.user_profile.user_id)
-            user_obj: BaseUser = BaseUser.from_orm(new_user)
+                
+                # Create user 
+                new_user = User(**user)    
+                # Create user profile
+                new_user_profile = UserProfile(**profile)
             
+            
+            self.db.add(new_user)
+            self.db.commit()
+            self.db.refresh(new_user)
+            
+            self.db.add(new_user_profile)
+            self.db.commit()
+            self.db.refresh(new_user_profile)
+                
+
+            user_obj: BaseUser = BaseUser.from_orm(new_user)            
             return user_obj
     
         except Exception as e:
-            print(e)
             self.db.rollback()
             raise InternalServerErrorException("Something went wrong creating user")
     

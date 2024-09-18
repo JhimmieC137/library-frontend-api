@@ -1,8 +1,10 @@
+import json
 import pika
 import time
+
 from core.env import config
-from collections import deque
-import json
+from .reducers import *
+
 
 # Connect to RabbitMQ
 credentials = pika.PlainCredentials(config.RABBIT_MQ_USER, config.RABBITMQ_DEFAULT_PASS)
@@ -36,9 +38,18 @@ class ListeningClient:
 
     def start_consuming(self):
         def callback(ch, method, properties, body):
-            print(body)
             print(json.loads(body))
-            print(f"Received message from B: {body.decode()}")
+            
+            body = json.loads(body)
+            match body['service']:
+                case "users":
+                    act_on_users(action=body['action'], payload=body['payload'], id=body['user_id'])
+                
+                case "transactions":
+                    act_on_transactions(body['action'], body['payload'], body['transaction_id'])
+                
+                case "books":
+                    act_on_books(body['action'], body['payload'], body['book_id'])
 
         try:
             self.channel.basic_consume(
