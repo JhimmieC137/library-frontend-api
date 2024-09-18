@@ -36,6 +36,7 @@ async def create_user(
             "service": "users",
             "action": "create_user",
             "payload": payload.dict(),
+            "user_id": None
         }))
         return {"message": "User created successfully", "data": new_user, "code": 201}
     
