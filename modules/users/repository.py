@@ -94,7 +94,7 @@ class UserRepository:
             raise InternalServerErrorException("Something went wrong updating user's email")
 
         
-    def partial_update_user_profile(self, payload: UpdateUserProfile, user_id: UUID):
+    def partial_update_user_profile(self, payload: Union[UpdateUserProfile, BaseUserProfile], user_id: UUID):
         user_query = self.db.query(User).filter(User.id == user_id)
         
         user: User = user_query.first()
@@ -119,27 +119,19 @@ class UserRepository:
             elif user_profile is not None and payload.user_profile != None:
                 user_profile_query.update(payload.user_profile.dict(exclude_unset=True))
         
-        except:
-            raise InternalServerErrorException("Something went wrong updating user's profile")
-        
-        # User Update
-        try:
             if payload.first_name:
                 user.first_name = payload.first_name
             
             if payload.last_name:
                 user.last_name=payload.last_name
-        
-        except:
-            raise InternalServerErrorException("Something went wrong updating user")
                 
-        # Save
-        try:
             self.db.commit()
             self.db.refresh(user)
             
-        except:
-            raise InternalServerErrorException("Something went wrong saving changes")
+        except Exception as e:
+            print(e)
+            raise InternalServerErrorException("Something went wrong updating user's profile")
+
         
         return user
         
