@@ -43,7 +43,7 @@ class ListeningClient:
                 on_message_callback=callback,
                 auto_ack=True
             )
-            print(" [*] Waiting for messages from B. To exit press CTRL+C")
+            print(" [*] Waiting for messages from A. To exit press CTRL+C")
             self.channel.start_consuming()
         except pika.exceptions.AMQPConnectionError:
             print("Connection lost, reconnecting...")
