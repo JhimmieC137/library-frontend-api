@@ -112,15 +112,15 @@ async def fetch_books(
     """
     try:
         
-        books, book_count = await bookRepo.get_book_list(
-                                                        page=page, 
-                                                        limit=limit, 
-                                                        search=search, 
-                                                        status=status, 
-                                                        category=category, 
-                                                        publishers=publishers,
-                                                        user_id=current_holder_id
-                                                    )
+        books, book_count = bookRepo.get_book_list(
+                                                page=page, 
+                                                limit=limit, 
+                                                search=search, 
+                                                status=status, 
+                                                category=category, 
+                                                publishers=publishers,
+                                                user_id=current_holder_id
+                                            )
         print("Here")
         client.send_message(json.dumps({"message": "Gume", "number": 5637}))
         return {'message': 'Book list fetched successfully', 'total_count': book_count, 'count': len(books), 'next_page': page + 1,'data': books}
