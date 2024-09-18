@@ -2,7 +2,8 @@ import pika
 import time
 from core.env import config
 from collections import deque
- 
+import json
+
 # Connect to RabbitMQ
 credentials = pika.PlainCredentials(config.RABBIT_MQ_USER, config.RABBITMQ_DEFAULT_PASS)
 parameters = pika.ConnectionParameters(config.RABBITMQ_HOSTNAME,
@@ -35,7 +36,9 @@ class ListeningClient:
 
     def start_consuming(self):
         def callback(ch, method, properties, body):
-            print(f"Received message from A: {body.decode()}")
+            print(body)
+            print(json.loads(body))
+            print(f"Received message from B: {body.decode()}")
 
         try:
             self.channel.basic_consume(

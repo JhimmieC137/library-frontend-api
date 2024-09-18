@@ -1,17 +1,15 @@
 from datetime import datetime
 from uuid import UUID
 from typing import List
-from slugify import slugify
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 
 from core.dependencies.sessions import get_db
-from core.helpers import password
 from core.helpers.mail_utils import *
 from core.exceptions.auth import DuplicateEmailException
-from core.exceptions.base import ForbiddenException, InternalServerErrorException
+from core.exceptions.base import InternalServerErrorException
 from core.exceptions import NotFoundException
 
 from .models import *
@@ -26,7 +24,7 @@ class UserRepository:
         
         if user:
             raise DuplicateEmailException("Email taken")
-
+        
         payload.email = payload.email.lower()
         new_user = User(**payload.dict())
 
@@ -114,9 +112,24 @@ class UserRepository:
             self.db.commit()
             self.db.refresh(user)
             
+            return user
+        
         except:
             raise InternalServerErrorException("Something went wrong saving changes")
         
-        return user
         
+        
+    async def get_user_list(self, page: int, limit: int, search: str) -> tuple[List[User], int]:
+        skip = (page - 1) * limit
+        user_query = self.db.query(User)\
+                    .filter(or_(
+                        User.first_name.ilike(f"%{search}%"),
+                        User.last_name.ilike(f"%{search}%"),
+                        User.email.ilike(f"%{search}%"),
+                    )).filter(User.is_active == True)
+        
+        user_count: int = user_query.count()
+        user: List[User] = user_query.order_by(User.created_at.desc()).limit(limit).offset(skip).all()
+        
+        return user, user_count
         

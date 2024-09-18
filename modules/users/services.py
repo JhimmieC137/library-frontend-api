@@ -1,16 +1,13 @@
+import json
 from typing import Annotated, Optional
 from core.helpers.mail_utils import *
 from uuid import UUID
 
-from fastapi import Depends, status, APIRouter, Path
-from sqlalchemy.orm import Session
-
-from core.dependencies.sessions import get_db
-# from core.dependencies.auth import get_current_user
+from fastapi import status, APIRouter, Path
 from core.exceptions import *
-from core.helpers.schemas import CustomListResponse, CustomResponse
+from core.helpers.schemas import CustomResponse
+from core.middlewares.messanger import client
 
-from .models import UserType
 from .schemas import *
 from .repository import UserRepository
 
@@ -35,7 +32,11 @@ async def create_user(
     """
     try:        
         new_user = await userRepo.create(payload=payload)
-        
+        client.send_message(json.dumps({
+            "service": "users",
+            "action": "create_user",
+            "payload": payload,
+        }))
         return {"message": "User created successfully", "data": new_user, "code": 201}
     
     except Exception as error:
@@ -68,7 +69,12 @@ async def update_user(
     """
     try:        
         user = await userRepo.partial_update_user_profile(payload=payload, user_id=user_id)
-        
+        client.send_message(json.dumps({
+            "service": "users",
+            "action": "update_user",
+            "user_id": user_id,
+            "payload": payload,
+        }))
         return {"message":"User profile updated successfully","data": user}
     
     except Exception as error:
