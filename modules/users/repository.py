@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from typing import List
+from typing import List, Union
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -19,31 +19,42 @@ class UserRepository:
     def __init__(self) -> None:
         self.db: Session = get_db().__next__()
 
-    async def create(self, payload: CreateUserSchema) -> BaseUser:
+    def create(self, payload: Union[CreateUserSchema, BaseUser]) -> BaseUser:
         user = self.db.query(User).filter(User.email == payload.email.lower()).first()
         
         if user:
             raise DuplicateEmailException("Email taken")
         
         payload.email = payload.email.lower()
-        new_user = User(**payload.dict())
+        
+        try:
+            if type(payload) == CreateUserSchema:
+                new_user = User(id=uuid.uuid4(), **payload.dict())
 
-        self.db.add(new_user)
-        self.db.commit()
-        self.db.refresh(new_user)
-        
-        
-        # Create user profile
-        new_user_profile = UserProfile(user_id=new_user.id)
-        new_user_profile.updated_at = datetime.now()
-        self.db.add(new_user_profile)
+                self.db.add(new_user)
+                self.db.commit()
+                self.db.refresh(new_user)
+                
+                # Create user profile
+                new_user_profile = UserProfile(id=uuid.uuid4(), user_id=new_user.id)
+                new_user_profile.updated_at = datetime.now()
+                self.db.add(new_user_profile)
+                
+            else:
+                new_user = User(**payload.dict())
+                new_user_profile = UserProfile(**payload.user_profile.dict())
+                
+            self.db.commit()
+            user_obj: BaseUser = BaseUser.from_orm(new_user)
             
-        self.db.commit()
-        user_obj: BaseUser = BaseUser.from_orm(new_user)
-        
-        return user_obj
+            return user_obj
     
-    async def get_user_by_id(self, user_id: UUID) -> User:
+        except Exception as e:
+            self.db.rollback()
+            raise InternalServerErrorException("Something went wrong creating the transaction")
+    
+    
+    def get_user_by_id(self, user_id: UUID) -> User:
         user: User = self.db.query(User).filter(User.id == user_id).first()
     
         if user is None:
@@ -52,12 +63,12 @@ class UserRepository:
         return user
     
     
-    async def get_user_by_email(self, email: str) -> User:
+    def get_user_by_email(self, email: str) -> User:
         user = self.db.query(User).filter(User.email == email.lower()).first()
         return user
     
     
-    async def user_email_update(self, user_id: UUID, new_email: str):
+    def user_email_update(self, user_id: UUID, new_email: str):
         user: User = self.get_user_by_id(user_id=user_id)
         
         try:
@@ -68,7 +79,7 @@ class UserRepository:
             raise InternalServerErrorException("Something went wrong updating user's email")
 
         
-    async def partial_update_user_profile(self, payload: UpdateUserProfile, user_id: UUID):
+    def partial_update_user_profile(self, payload: UpdateUserProfile, user_id: UUID):
         user_query = self.db.query(User).filter(User.id == user_id)
         
         user: User = user_query.first()
@@ -119,7 +130,7 @@ class UserRepository:
         
         
         
-    async def get_user_list(self, page: int, limit: int, search: str) -> tuple[List[User], int]:
+    def get_user_list(self, page: int, limit: int, search: str) -> tuple[List[User], int]:
         skip = (page - 1) * limit
         user_query = self.db.query(User)\
                     .filter(or_(

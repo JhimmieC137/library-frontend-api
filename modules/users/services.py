@@ -31,11 +31,11 @@ async def create_user(
     Enroll users
     """
     try:        
-        new_user = await userRepo.create(payload=payload)
+        new_user = userRepo.create(payload=payload)
         client.send_message(json.dumps({
             "service": "users",
             "action": "create_user",
-            "payload": payload.dict(),
+            "payload": BaseUser.from_orm(new_user).dict(),
             "user_id": None
         }))
         return {"message": "User created successfully", "data": new_user, "code": 201}
@@ -52,7 +52,7 @@ async def request_user_details(
     Fetch user's details/profile 
     """
     try:
-        user = await userRepo.get_user_by_email(email=payload.email)
+        user = userRepo.get_user_by_email(email=payload.email)
 
         return {'message': 'User details retrieved successfully', 'data': user}
 
@@ -69,12 +69,12 @@ async def update_user(
     Update user 
     """
     try:        
-        user = await userRepo.partial_update_user_profile(payload=payload, user_id=user_id)
+        user = userRepo.partial_update_user_profile(payload=payload, user_id=user_id)
         client.send_message(json.dumps({
             "service": "users",
             "action": "update_user",
             "user_id": user_id,
-            "payload": payload.dict(),
+            "payload": BaseUser.from_orm(user).dict(),
         }))
         return {"message":"User profile updated successfully","data": user}
     

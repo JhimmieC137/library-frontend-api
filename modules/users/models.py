@@ -19,8 +19,7 @@ class UserType(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False,
-                default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False)
     first_name = Column(String,  nullable=False)
     last_name = Column(String,  nullable=False)
     email = Column(String, unique=True, nullable=False)
@@ -48,8 +47,7 @@ class User(Base):
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
-    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False,
-                default=uuid.uuid4) 
+    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True) 
     user =  relationship('User')
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     address = Column(String, nullable=True)

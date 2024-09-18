@@ -19,6 +19,8 @@ class BaseTransaction(BaseModel):
     status : Optional[TransactionStatus] = None
     created_at: Optional[datetime] = None
     return_date: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True, validate_assignment=True)
 
 class CreateTransaction(BaseModel):
@@ -32,7 +34,6 @@ class CreateTransaction(BaseModel):
     model_config = ConfigDict(from_attributes=True, validate_assignment=True)
 
 class UpdateTransaction(BaseModel):
-    id: Optional[UUID] = None
     book_id: Optional[UUID] = None
     book_name: Optional[str] = None
     user_id: Optional[UUID] = None
@@ -50,7 +51,14 @@ class BaseBook(BaseModel):
     publishers: Optional[str] = None
     category: Optional[BookCategory] = None
     status: Optional[BookStatus] = None
+    holder_id: Optional[UUID] = None
+    holder_email: Optional[EmailStr] = None
+    is_deleted: Optional[bool] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True, validate_assignment=True)
+
 
 
 class UpdateBook(BaseModel):
@@ -59,6 +67,8 @@ class UpdateBook(BaseModel):
     publishers: Optional[str] = None
     category: Optional[BookCategory] = None
     status: Optional[BookStatus] = None
+    holder_id: Optional[UUID] = None
+    holder_email: Optional[EmailStr] = None
     model_config = ConfigDict(from_attributes=True, validate_assignment=True)
 
 

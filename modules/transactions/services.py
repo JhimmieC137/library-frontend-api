@@ -34,11 +34,11 @@ async def create_transaction(
     Create transaction to borrow or Return book
     """
     try:        
-        new_transaction = await transactionRepo.create(payload=payload)
+        new_transaction = transactionRepo.create(payload=payload)
         client.send_message(json.dumps({
             "service": "transactions",
             "action": "create_transaction",
-            "payload": payload.dict(),
+            "payload": new_transaction.dict(),
         }))
         return {"message": "Transaction created successfully", "data": new_transaction, "code": 201}
     
@@ -56,7 +56,7 @@ async def fetch_transactions(
     Fetch current user's transactions
     """
     try:
-        transactions, transaction_count = await transactionRepo.get_transaction_list(page=page, limit=limit, user_id=user_id, status=status)
+        transactions, transaction_count = transactionRepo.get_transaction_list(page=page, limit=limit, user_id=user_id, status=status)
         
         return {'message': 'Transaction list fetched successfully', 'total_count': transaction_count, 'count': len(transactions), 'next_page': page + 1,'data': transactions}
     
