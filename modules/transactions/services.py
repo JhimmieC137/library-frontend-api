@@ -7,7 +7,7 @@ from core.dependencies.sessions import get_db
 # from core.dependencies.auth import get_current_user
 from core.exceptions import *
 from core.helpers.schemas import CustomListResponse, CustomResponse
-from core.middlewares.stream_client import client
+from core.middlewares.messanger import client
 
 from .models import *
 from .schemas import *
