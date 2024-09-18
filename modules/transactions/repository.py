@@ -41,7 +41,7 @@ class TransactionRepository:
             
         try:
             payload_dict = payload.dict()
-            days_till_return = payload_dict.pop('days_till_return')
+            days_till_return = payload_dict.pop('days_till_return') if 'days_till_return' in payload_dict.keys() else None
             
             if type(payload) == CreateTransaction:
                 new_transaction = Transaction(id=uuid4(), **payload_dict)

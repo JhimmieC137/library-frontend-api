@@ -33,7 +33,7 @@ def act_on_users(action: str, payload, id: UUID = None):
  
 def act_on_transactions(action: str, payload, id: UUID = None):
     match action:
-        case "create_transactions":
+        case "create_transaction":
             try:
                 transactionRepo.create(payload=BaseTransaction(**payload))
             
