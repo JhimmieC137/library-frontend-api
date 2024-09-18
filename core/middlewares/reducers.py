@@ -25,7 +25,7 @@ def act_on_users(action: str, payload, id: UUID = None):
             
         case "update_user":
             try:
-                userRepo.partial_update_user_profile(payload=BaseUserProfile(**payload), user_id=id)
+                userRepo.partial_update_user_profile(payload=BaseUser(**payload), user_id=id)
             
             except Exception as error:
                 raise error
