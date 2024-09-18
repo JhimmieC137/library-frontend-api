@@ -109,7 +109,7 @@ class TransactionRepository:
         if transaction is None:
             raise NotFoundException("Transaction not found!")
         
-        return Transaction
+        return transaction
         
 class BookRepository:
     def __init__(self) -> None:
