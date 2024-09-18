@@ -47,9 +47,9 @@ class Book(Base):
     
     # Timestamps
     created_at = Column(TIMESTAMP(timezone=True),
-                        nullable=False, server_default=text("now()"))
+                        nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True),
-                        nullable=False, server_default=text("now()"), onupdate=text("now()"))
+                        nullable=False)
     
     deleted_at = Column(TIMESTAMP(timezone=True),
                         nullable=True)
@@ -64,11 +64,11 @@ class Transaction(Base):
     
     # Book info
     book_id = Column(UUID(as_uuid=True), nullable=False)
-    book_name = Column(String, nullable=False, server_default = "Anonymous by John Doe")
+    book_name = Column(String, nullable=False)
     
     # User info
     user_id = Column(UUID(as_uuid=True), nullable=False)
-    user_email = Column(String, nullable=False, server_default = "example@mail.com")
+    user_email = Column(String, nullable=False)
     
     status = Column(Enum(TransactionStatus), server_default = TransactionStatus.BORROWING, nullable=False)
     

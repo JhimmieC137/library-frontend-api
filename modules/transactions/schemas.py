@@ -60,7 +60,6 @@ class BaseBook(BaseModel):
     model_config = ConfigDict(from_attributes=True, validate_assignment=True)
 
 
-
 class UpdateBook(BaseModel):
     name: Optional[str] = None
     author: Optional[str] = None

@@ -1,10 +1,9 @@
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import List, Union
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-
 
 from core.dependencies.sessions import get_db
 from core.helpers.mail_utils import *
@@ -25,8 +24,7 @@ class UserRepository:
         if user:
             raise DuplicateEmailException("Email taken")
         
-        payload.email = payload.email.lower()
-        
+        payload.email = payload.email.lower()        
         try:
             if type(payload) == CreateUserSchema:
                 new_user = User(id=uuid.uuid4(), **payload.dict())
@@ -41,17 +39,21 @@ class UserRepository:
                 self.db.add(new_user_profile)
                 
             else:
-                new_user = User(**payload.dict())
-                new_user_profile = UserProfile(**payload.user_profile.dict())
+                new_user = User(id=UUID(payload.id), **payload.dict())
+                new_user_profile = UserProfile(id=UUID(payload.user_profile.id), **payload.user_profile.dict())
                 
             self.db.commit()
+            # new_user.id = str(new_user.id)
+            # new_user.user_profile.id = str(new_user.user_profile.id)
+            # new_user.user_profile.user_id = str(new_user.user_profile.user_id)
             user_obj: BaseUser = BaseUser.from_orm(new_user)
             
             return user_obj
     
         except Exception as e:
+            print(e)
             self.db.rollback()
-            raise InternalServerErrorException("Something went wrong creating the transaction")
+            raise InternalServerErrorException("Something went wrong creating user")
     
     
     def get_user_by_id(self, user_id: UUID) -> User:
@@ -61,6 +63,15 @@ class UserRepository:
             raise NotFoundException("User not found!")
         
         return user
+    
+    
+    # async def deactivate_user_by_id(self, user_id: UUID) -> User:
+    #     user: User = self.db.query(User).filter(User.id == user_id).first()
+    
+    #     if user is None:
+    #         raise NotFoundException("User not found!")
+        
+    #     return user
     
     
     def get_user_by_email(self, email: str) -> User:
@@ -123,11 +134,10 @@ class UserRepository:
             self.db.commit()
             self.db.refresh(user)
             
-            return user
-        
         except:
             raise InternalServerErrorException("Something went wrong saving changes")
         
+        return user
         
         
     def get_user_list(self, page: int, limit: int, search: str) -> tuple[List[User], int]:

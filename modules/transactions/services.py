@@ -7,6 +7,7 @@ from fastapi import status, APIRouter, Path
 from core.exceptions import *
 from core.helpers.schemas import CustomListResponse, CustomResponse
 from core.middlewares.messanger import client
+from core.helpers.json_encoder import JSONEncoder
 
 from .models import *
 from .schemas import *
@@ -38,8 +39,9 @@ async def create_transaction(
         client.send_message(json.dumps({
             "service": "transactions",
             "action": "create_transaction",
-            "payload": new_transaction.dict(),
-        }))
+            "payload": BaseTransaction.from_orm(new_transaction).dict(),
+            "transaction_id": None
+        }, cls=JSONEncoder))
         return {"message": "Transaction created successfully", "data": new_transaction, "code": 201}
     
     except Exception as error:
@@ -87,17 +89,22 @@ async def retrieve_transaction(
 # Books
 # ##################################
 
+# @router.post('/books', status_code=status.HTTP_201_CREATED, response_model=CustomResponse[BaseBook], tags=["Books"])
 # async def register_new_book(
 #     payload: CreateBook,
 # ) -> CustomResponse[BaseBook]:
 #     try:
-#         new_book = await bookRepo.create_book(payload=payload)
-
+#         new_book = bookRepo.create_book(payload=payload)
+#         client.send_message(json.dumps({
+#             "service": "books",
+#             "action": "create_book",
+#             "payload": BaseBook.from_orm(new_book).dict(),
+#             "book_id": None
+#         }, cls=JSONEncoder))
 #         return  {"message": "Book created successfully", "data": new_book}
     
 #     except Exception as error:
 #         raise error
-    
 
 @router.get('/books', response_model=CustomListResponse[BaseBook], tags=["Books"])
 async def fetch_books(
@@ -137,7 +144,7 @@ async def retrieve_book(
     Retrieve book
     """
     try:
-        book = await bookRepo.get_book_by_id(book_id=book_id)
+        book = bookRepo.get_book_by_id(book_id=book_id)
         
         return {"message": "Book retrieved successfully", "data": book}
     

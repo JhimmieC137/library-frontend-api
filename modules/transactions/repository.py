@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from typing import List, Union
+from slugify import slugify
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -18,8 +19,9 @@ from .schemas import *
 class TransactionRepository:
     def __init__(self) -> None:
         self.db: Session = get_db().__next__()
+        
 
-    def create(self, payload: Union[CreateTransaction, BaseTransaction]) -> Transaction:
+    def create(self, payload: Union[CreateTransaction, BaseTransaction]) -> BaseTransaction: # type: ignore
         user: User = self.db.query(User).filter(User.id == payload.user_id).first()
         if user is None:
             raise NotFoundException("User not found!")
@@ -38,11 +40,12 @@ class TransactionRepository:
             raise UnprocessableEntity("Book has been returned already")
             
         try:
-            payload = payload.dict()
-            days_till_return = payload.pop('days_till_return')
+            payload_dict = payload.dict()
+            days_till_return = payload_dict.pop('days_till_return')
             
-            new_transaction = Transaction(id=uuid4() if type(payload) == CreateTransaction else payload.id, **payload)
-            if payload['status'] == TransactionStatus.BORROWING:
+            new_transaction = Transaction(id=uuid4() if type(payload) == CreateTransaction else payload_dict['id'], **payload_dict)
+        
+            if payload_dict['status'] == TransactionStatus.BORROWING:
                 new_transaction.return_date = datetime.now() + timedelta(days_till_return)
                 book.status = BookStatus.BORROWED 
                 book.holder_id = user.id
@@ -52,7 +55,7 @@ class TransactionRepository:
                 book.status = BookStatus.AVAILABLE 
                 book.holder_id = None
                 book.holder_email = None
-                book.updated_at = datetime.now() if type(payload) == CreateTransaction else payload.created_at
+                book.updated_at = datetime.now() if type(payload) == CreateTransaction else payload_dict['created_at']
                 
  
             self.db.add(new_transaction)
@@ -63,8 +66,10 @@ class TransactionRepository:
             
         
         except Exception as e:
+            print(e)
             self.db.rollback()
             raise InternalServerErrorException("Something went wrong creating the transaction")
+        
 
 
     def get_transaction_list(self, page: int, limit: int, user_id: UUID = None, status: TransactionStatus = None) -> tuple[List[Transaction], int]:
@@ -90,10 +95,10 @@ class TransactionRepository:
     
     def get_transaction_by_id(self, transaction_id: UUID) -> Transaction:
         transaction: Transaction = self.db.query(Transaction).filter(Transaction.id == transaction_id).first()
-
+    
         if transaction is None:
             raise NotFoundException("Transaction not found!")
-
+        
         return Transaction
         
 class BookRepository:
@@ -157,7 +162,7 @@ class BookRepository:
         if book:
             raise DuplicateValueException("Book already exists!")
         
-        new_book = Book(**payload.dict())
+        new_book = Book(id=uuid4(), **payload.dict())
         
         self.db.add(new_book)
         self.db.commit()
@@ -184,10 +189,8 @@ class BookRepository:
             raise InternalServerErrorException("Something went wrong removing book from library")
     
     
-        
-    
     def update_book(self, book_id: UUID, payload: UpdateBook) -> Book:
-        book_query = self.db.query(Book).filter(Book.id == book_id).first()
+        book_query = self.db.query(Book).filter(Book.id == book_id)
         
         book: Book = book_query.first()
         if book is None:
@@ -204,3 +207,4 @@ class BookRepository:
         except:
             self.db.rolback()
             raise InternalServerErrorException("Something went wrong updating book")
+            
