@@ -50,8 +50,8 @@ async def create_transaction(
 
 @router.get('/transactions', response_model=CustomListResponse[BaseTransaction], tags=["Transactions"])
 async def fetch_transactions(
-    user_id: Annotated[UUID, Path(title="The ID of the User")], 
-    book_id: Annotated[UUID, Path(title="The ID of the Book")] = None, 
+    user_id: UUID, 
+    book_id: UUID = None, 
     limit: int = 10, page: int = 1, 
     status: TransactionStatus = None
 ) -> CustomListResponse[BaseTransaction]:
