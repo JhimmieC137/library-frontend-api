@@ -109,7 +109,7 @@ async def retrieve_transaction(
 
 @router.get('/books', response_model=CustomListResponse[BaseBook], tags=["Books"])
 async def fetch_books(
-    current_holder_id: Annotated[UUID, Path(title="The ID of the User")] = None,
+    # current_holder_id: Annotated[UUID, Path(title="The ID of the User")] = None,
     limit: int = 10, page: int = 1, search: str = '',
     publishers: str = None,
     status: BookStatus = BookStatus.AVAILABLE,
@@ -127,7 +127,7 @@ async def fetch_books(
                                                 status=status, 
                                                 category=category, 
                                                 publishers=publishers,
-                                                user_id=current_holder_id
+                                                # user_id=current_holder_id
                                             )
         print("Here")
         client.send_message(json.dumps({"message": "Gume", "number": 5637}))

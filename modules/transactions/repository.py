@@ -115,7 +115,7 @@ class BookRepository:
     def __init__(self) -> None:
         self.db: Session = get_db().__next__()
         
-    def get_book_list(self, page: int, limit: int, search: str, publishers: str = None, category: BookCategory = None, status: BookStatus = None, user_id: UUID = None) -> tuple[List[Book], int]:
+    def get_book_list(self, page: int, limit: int, search: str, publishers: str = None, category: BookCategory = None, status: BookStatus = None) -> tuple[List[Book], int]:
         skip = (page - 1) * limit
         
         try:
@@ -139,10 +139,10 @@ class BookRepository:
                     Book.status == status
                 )
                 
-            if user_id:
-                book_query = book_query.filter(
-                    Book.holder_id == user_id
-                )
+            # if user_id:
+            #     book_query = book_query.filter(
+            #         Book.holder_id == user_id
+            #     )
         
         except:
             raise InternalServerErrorException("Something went wrong fetching the books")
