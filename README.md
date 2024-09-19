@@ -1,230 +1,112 @@
-# FastAPI Boilerplate
+# Library Application (Assessment)
 
-# Features
-- Async SQLAlchemy session
-- Custom user class
-- Top-level dependency
-- Dependencies for specific permissions
-- Celery
-- Dockerize(Hot reload)
-- Event dispatcher
-- Cache
+## Overview
+My attempt at this assessment was created with the [FastAPI framework](https://fastapi.tiangolo.com/) and [Rabbitmq](https://www.rabbitmq.com/) for interaction between the Frontend/Client and Backend/Admin.
+This repo links both of the separate repos, find their links below
 
-## Run
+## Service Repos
+- Frontend/Client Api - https://github.com/JhimmieC137/library-frontend-api.git 
+- Backend/Admin Api - https://github.com/JhimmieC137/library-backend-api.git
+
+## Deployments
+- Frontend/Client Api - https://library-frontend-api-fsz4.onrender.com/docs
+- Backend/Admin Api - https://library-backend-api-9k0h.onrender.com/docs
 
-```python
-python3 main.py --env local|dev|prod --debug
-```
+## Requirements
+- [Docker](https://www.docker.com/products/docker-desktop/)
+- A .env file to fill the following: 
+POSTGRES_TEST_DATABASE=test_db
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DATABASE=
+POSTGRES_SERVER=
+POSTGRES_PORT=
+RABBITMQ_USER=
+RABBITMQ_DEFAULT_PASS=
+RABBITMQ_HOSTNAME=
+RABBITMQ_PORT=
 
-## SQLAlchemy for asyncio context
 
-```alembic revision --autogenerate -m "creat users table"
+## Running the applications
+Clone the repo's and at the root directry run a `docker-compose up`, visit api documentation at [localhost:8000/docs](localhost:8000/docs)
 
-alembic upgrade head
+## Frontend/Client Api breakdown
 
+#### Users
+- "api/v1/users" --- POST
+Enrolls users into the library using their email, firstname and lastname.
 
-```
+- "api/v1/users/find-me" --- POST
+Takes a payoad containing a user's email only, and returns the users details, if user exists 
 
-```python
-from core.db import Transactional, session
+- "api/v1/users/{id}" --- PATCH
+Updates enrolled users data
 
+#### Books
+- "api/v1/books"  --- GET
+Lists all available books (created by the admin), with filter
+    * by publishers e.g Wiley, Apress, Manning 
+    * by category e.g fiction, technology, science
 
-@Transactional()
-async def create_user(self):
-    session.add(User(email="pam@super.com"))
-```
+- "api/v1/books/{id}"  --- GET
+Retieves a specific book using its unique ID
 
-Do not use explicit `commit()`. `Transactional` class automatically do.
+#### Transactions
+- "api/v1/trasactions" --- POST
+This endpoints facilitates the borrowing or returning of books, depending on the status of the transaction. It requires the book's ID, books name, user's ID, user's email, status, to specify on borrowing or returning), and a specified time of return for "borrowing" transactions. New transaction data will be sent to the Backend API on creation.
 
-### Standalone session
+- "api/v1/transactions" --- GET
+To fetch all transactions from a specific user with filters for
+    * status (i.e borrowing or returning transactions)
+    * book_id (i.e to retrive that user's transactions on a specific book)
 
-According to the current settings, the session is set through middleware.
+- "api/v1/transactions/{id}" --- GET
+To fetch specific transaction with it's unique ID
 
-However, it doesn't go through middleware in tests or background tasks.
 
-So you need to use the `@standalone_session` decorator.
+## Backend/Admin Api breakdown
+#### Users
+- "api/v1/users" --- POST
+Creates users into the library using their email, firstname and lastname. New User data will be sent to the Frontend API on creation.
 
-```python
-from core.db import standalone_session
+- "api/v1/users/" --- GET
+Fetches paginated list of all users filtering by a search on names and email
 
+- "api/v1/users/{id}" --- GET
+Retrieves a particular user using their unique ID
 
-@standalone_session
-def test_something():
-    ...
-```
+- "api/v1/users/{id}" --- PATCH
+Updates users data. Updates to user data is sent to the Frontend Api on updating 
 
-### Multiple databases
+#### Books
+- "api/v1/books"  --- POST
+Adds new books to the database and updates the Frontend service on each newly created book.
 
-Go to `core/config.py` and edit `WRITER_DB_URL` and `READER_DB_URL` in the config class.
+- "api/v1/books"  --- GET
+Lists all available books (created by the admin), with filter
+    * by publishers e.g Wiley, Apress, Manning 
+    * by category e.g fiction, technology, science
+    * status (i.e If available or borrowed)
+    * current holder's id (i.e the current user with book, for getting books a paticular user has borrowed)
 
+- "api/v1/books/{id}"  --- GET
+Retieves a specific book using its unique ID
 
-If you need additional logic to use the database, refer to the `get_bind()` method of `RoutingClass`.
+- "api/v1/books/{id}"  --- DELETE
+Removes a specific book using its unique ID. This is communicated to the Frontend service when it happens
 
-## Custom user for authentication
+- "api/v1/books/{id}"  --- PATCH
+Updates a certain books deails and informs the Frontend service of details.
 
-```python
-from fastapi import Request
-
-
-@home_router.get("/")
-def home(request: Request):
-    return request.user.id
-```
-
-**Note. you have to pass jwt token via header like `Authorization: Bearer 1234`**
-
-Custom user class automatically decodes header token and store user information into `request.user`
-
-If you want to modify custom user class, you have to update below files.
-
-1. `core/fastapi/schemas/current_user.py`
-2. `core/fastapi/middlewares/authentication.py`
-
-### CurrentUser
-
-```python
-class CurrentUser(BaseModel):
-    id: int = Field(None, description="ID")
-```
-
-Simply add more fields based on your needs.
-
-### AuthBackend
-
-```python
-current_user = CurrentUser()
-```
-
-After line 18, assign values that you added on `CurrentUser`.
-
-## Top-level dependency
-
-**Note. Available from version 0.62 or higher.**
-
-Set a callable function when initialize FastAPI() app through `dependencies` argument.
-
-Refer `Logging` class inside of `core/fastapi/dependencies/logging.py` 
-
-## Dependencies for specific permissions
-
-Permissions `IsAdmin`, `IsAuthenticated`, `AllowAll` have already been implemented.
- 
-```python
-from core.fastapi.dependencies import (
-    PermissionDependency,
-    IsAdmin,
-)
-
-
-user_router = APIRouter()
-
-
-@user_router.get(
-    "",
-    response_model=List[GetUserListResponseSchema],
-    response_model_exclude={"id"},
-    responses={"400": {"model": ExceptionResponseSchema}},
-    dependencies=[Depends(PermissionDependency([IsAdmin]))],  # HERE
-)
-async def get_user_list(
-    limit: int = Query(10, description="Limit"),
-    prev: int = Query(None, description="Prev ID"),
-):
-    pass
-```
-Insert permission through `dependencies` argument.
-
-If you want to make your own permission, inherit `BasePermission` and implement `has_permission()` function.
-
-**Note. In order to use swagger's authorize function, you must put `PermissionDependency` as an argument of `dependencies`.**
-
-## Event dispatcher
-
-Refer the README of https://github.com/teamhide/fastapi-event
-
-## Cache
-
-### Caching by prefix
-```python
-from core.helpers.cache import Cache
-
-
-@Cache.cached(prefix="get_user", ttl=60)
-async def get_user():
-    ...
-```
-
-### Caching by tag
-```python
-from core.helpers.cache import Cache, CacheTag
-
-
-@Cache.cached(tag=CacheTag.GET_USER_LIST, ttl=60)
-async def get_user():
-    ...
-```
-
-Use the `Cache` decorator to cache the return value of a function.
-
-Depending on the argument of the function, caching is stored with a different value through internal processing.
-
-### Custom Key builder
-
-```python
-from core.helpers.cache.base import BaseKeyMaker
-
-
-class CustomKeyMaker(BaseKeyMaker):
-    async def make(self, function: Callable, prefix: str) -> str:
-        ...
-```
-
-If you want to create a custom key, inherit the BaseKeyMaker class and implement the make() method.
-
-### Custom Backend
-
-```python
-from core.helpers.cache.base import BaseBackend
-
-
-class RedisBackend(BaseBackend):
-    async def get(self, key: str) -> Any:
-        ...
-
-    async def set(self, response: Any, key: str, ttl: int = 60) -> None:
-        ...
-
-    async def delete_startswith(self, value: str) -> None:
-        ...
-```
-
-If you want to create a custom key, inherit the BaseBackend class and implement the `get()`, `set()`, `delete_startswith()` method.
-
-Pass your custom backend or keymaker as an argument to init. (`/app/server.py`)
-
-```python
-def init_cache() -> None:
-    Cache.init(backend=RedisBackend(), key_maker=CustomKeyMaker())
-```
-
-### Remove all cache by prefix/tag
-
-```python
-from core.helpers.cache import Cache, CacheTag
-
-
-await Cache.remove_by_prefix(prefix="get_user_list")
-await Cache.remove_by_tag(tag=CacheTag.GET_USER_LIST)
-```
-
-
-### Migration
-
-
-### Testig
-pytest tests/{file}.py -v -s
-
-### TODO:
-- Make db a global dependency rather than per route: DONE
-- Refactor get current user and auth middleware
-- Implement repository pattern: IN PROGRESS
+#### Transactions
+- "api/v1/trasactions" --- POST
+To assist users with trouble creating transactions. Transactions created here a also send to the Frontend service
+
+- "api/v1/transactions" --- GET
+To fetch all transactions with filters for
+    * user's id (i.e transactions by a specific user)
+    * status (i.e borrowing or returning transactions)
+    * book_id (i.e to retrive that user's transactions on a specific 
+
+- "api/v1/transactions/{id}" --- GET
+To fetch specific transaction with it's unique ID
