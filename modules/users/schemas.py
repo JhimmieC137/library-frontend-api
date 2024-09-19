@@ -48,4 +48,8 @@ class CreateUserSchema(BaseModel):
     first_name: str
     last_name: str
     model_config = ConfigDict(from_attributes=True, validate_assignment=True)
+
+class FindUserSchema(BaseModel):
+    email: EmailStr
+    model_config = ConfigDict(from_attributes=True, validate_assignment=True)
     
