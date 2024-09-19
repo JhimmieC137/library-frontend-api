@@ -63,7 +63,7 @@ async def create_user(
 
 
 
-@router.post('/find_me', response_model=CustomResponse[BaseUser])
+@router.post('/find-me', response_model=CustomResponse[BaseUser])
 async def find_me(
     payload: FindUserSchema
 ) -> CustomResponse[BaseUser]:
